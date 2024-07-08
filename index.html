@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>斗地主计分</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+
+        .container {
+            max-width: 400px;
+            margin: 0 auto;
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+
+        h1 {
+            text-align: center;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        th,
+        td {
+            padding: 10px;
+            text-align: center;
+            border: 1px solid #ccc;
+        }
+
+        input[type="text"],
+        input[type="number"] {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            box-sizing: border-box;
+        }
+
+        #restart_window {
+            visibility: hidden;
+            position: absolute;
+            margin: auto;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            width: 200px;
+            height: 70px;
+            text-align: center;
+            line-height: 35px;
+            display: block;
+            text-decoration: none;
+            color: #333;
+            background-color: #ffffff;
+            border: 2px solid #ccccccab;
+            padding: 10px 20px;
+            border-radius: 5px;
+            letter-spacing: 2px;
+        }
+
+        .buttons {
+            display: flex;
+            justify-content: center;
+            margin-top: 20px;
+        }
+
+        button {
+            padding: 5px 10px;
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            border-radius: 15px;
+            cursor: pointer;
+            margin: 0 10px;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        #myForm {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        #myForm>div {
+            margin-bottom: 20px;
+            line-height: 30px;
+        }
+
+        #gameRound {
+            text-align: center;
+        }
+
+        #pow {
+            width: 50px;
+        }
+    </style>
+    <script src="vue.js"></script>
+</head>
+
+<body>
+    <div class="container">
+        <h1>斗地主计分器</h1>
+        <div id="gameRound">当前对局数：
+            <span id="game"></span>
+        </div>
+        <table id="myTable">
+            <tbody>
+                <tr>
+                    <td id="rename1"><input type="text" id="rename1_name" placeholder="玩家1姓名" maxlength="10"></td>
+                    <td>
+                        <div id="player1"></div>
+                    </td>
+                    <td>
+                        <div id="score1"></div>
+                    </td>
+                    <td><input type="number" id="player1_score" placeholder="分数"></td>
+                </tr>
+                <tr>
+                    <td id="rename2"><input type="text" id="rename2_name" placeholder="玩家2姓名" maxlength="10"></td>
+                    <td>
+                        <div id="player2"></div>
+                    </td>
+                    <td>
+                        <div id="score2"></div>
+                    </td>
+                    <td><input type="number" id="player2_score" placeholder="分数"></td>
+                </tr>
+                <tr>
+                    <td id="rename3"><input type="text" id="rename3_name" placeholder="玩家3姓名" maxlength="10"></td>
+                    <td>
+                        <div id="player3"></div>
+                    </td>
+                    <td>
+                        <div id="score3"></div>
+                    </td>
+                    <td><input type="number" id="player3_score" placeholder="分数"></td>
+                </tr>
+            </tbody>
+        </table>
+        <div class="buttons">
+            <button id='rename_button' onclick="rename()">玩家命名</button>
+            <button id='confirm_rename_button' onclick="confirmRename()" hidden>确认</button>
+            <button id='adjust_score_button' onclick="adjust()">调整分数</button>
+            <button id='confirm_adjust_button' onclick="confirmAdjust()" hidden>确认</button>
+            <div id="adjust_tip" hidden>请输入分数的变化量</div>
+            <button class="button_restart" id='restart' onclick="restart()">重新开始</button>
+            <button id='serch_record' onclick="search_record()">查看战绩</button>
+        </div>
+        <div id="myForm">
+            <div>本局地主：<br>
+                <input type="radio" name="landlord" value="p1" checked><span id="player1_form"></span>
+                <input type="radio" name="landlord" value="p2"><span id="player2_form"></span>
+                <input type="radio" name="landlord" value="p3"><span id="player3_form"></span>
+            </div>
+            <div>胜负：
+                <input type="radio" name="win" value="lwin" checked>地主获胜
+                <input type="radio" name="win" value="pwin">农民获胜
+            </div>
+            <div>本局叫分：
+                <input type="radio" name="point" value="1">1
+                <input type="radio" name="point" value="2">2
+                <input type="radio" name="point" value="3" checked>3
+            </div>
+            <div>翻倍次数：
+                <input type="number" id="pow" value="0">
+                <button onclick="nextRound()">结算本轮</button>
+            </div>
+        </div>
+    </div>
+    <div id="restart_window">
+        重新开始游戏？<br>
+        <button onclick="confirm_restart()">确认</button>
+        <button onclick="cancel_restart()">取消</button>
+    </div>
+    <script src="initStorage.js"></script>
+    <script>
+        hideColumn(0)
+        hideColumn(3)
+        displayScore()
+
+        function search_record() {
+            location.href = "./record"
+        }
+
+        function nextRound() {
+            let landlord, point, num, list, win
+            list = document.getElementsByName('win')
+            for (let key in list) {
+                if (list[key].checked) {
+                    win = list[key].value
+                }
+            }
+            list = document.getElementsByName('landlord')
+            for (let key in list) {
+                if (list[key].checked) {
+                    landlord = list[key].value
+                }
+            }
+            list = document.getElementsByName('point')
+            for (let key in list) {
+                if (list[key].checked) {
+                    point = parseInt(list[key].value)
+                }
+            }
+            num = parseInt(document.getElementById('pow').value)
+            if (!landlord || !win || !point || num < 0)
+                return
+            let score = 2 ** num * point
+            if (win == 'pwin')
+                score = -score
+            let newRecord = {}
+            if (landlord == "p1") {
+                score1 += 2 * score
+                score2 -= score
+                score3 -= score
+                newRecord.lastscore1 = 2 * score
+                newRecord.lastscore2 = -score
+                newRecord.lastscore3 = -score
+            }
+            else if (landlord == "p2") {
+                score2 += 2 * score
+                score1 -= score
+                score3 -= score
+                newRecord.lastscore2 = 2 * score
+                newRecord.lastscore1 = -score
+                newRecord.lastscore3 = -score
+            }
+            else if (landlord == "p3") {
+                score3 += 2 * score
+                score1 -= score
+                score2 -= score
+                newRecord.lastscore3 = 2 * score
+                newRecord.lastscore1 = -score
+                newRecord.lastscore2 = -score
+            }
+            newRecord.score1 = score1
+            newRecord.score2 = score2
+            newRecord.score3 = score3
+            add_record(newRecord)
+            game++
+            displayScore()
+        }
+
+        function showInitialButtons() {
+            document.getElementById('confirm_rename_button').hidden = true
+            document.getElementById('confirm_adjust_button').hidden = true
+            document.getElementById('adjust_score_button').hidden = false
+            document.getElementById('rename_button').hidden = false
+            document.getElementById('restart').hidden = false
+        }
+
+        function hideButtons() {
+            document.getElementById('confirm_rename_button').hidden = true
+            document.getElementById('confirm_adjust_button').hidden = true
+            document.getElementById('adjust_score_button').hidden = true
+            document.getElementById('rename_button').hidden = true
+            document.getElementById('restart').hidden = true
+        }
+
+        function showColumn(colIndex) {
+            let table = document.getElementById("myTable");
+            let rows = table.getElementsByTagName("tr");
+
+            for (var i = 0; i < rows.length; i++) {
+                var cells = rows[i].getElementsByTagName("td");
+                if (cells.length > colIndex) {
+                    cells[colIndex].style.display = ""
+                }
+            }
+        }
+
+        function hideColumn(colIndex) {
+            let table = document.getElementById("myTable");
+            let rows = table.getElementsByTagName("tr");
+
+            for (var i = 0; i < rows.length; i++) {
+                var cells = rows[i].getElementsByTagName("td");
+                if (cells.length > colIndex) {
+                    cells[colIndex].style.display = "none"
+                }
+            }
+        }
+
+        function displayScore() {
+            document.getElementById('game').innerHTML = game
+            document.getElementById('player1').innerHTML = name1
+            document.getElementById('player2').innerHTML = name2
+            document.getElementById('player3').innerHTML = name3
+            document.getElementById('player1_form').innerHTML = name1
+            document.getElementById('player2_form').innerHTML = name2
+            document.getElementById('player3_form').innerHTML = name3
+            document.getElementById('score1').innerHTML = score1
+            document.getElementById('score2').innerHTML = score2
+            document.getElementById('score3').innerHTML = score3
+            save_info()
+        }
+
+        function rename() {
+            hideColumn(1)
+            showColumn(0)
+            document.getElementById('rename1').hidden = false
+            document.getElementById('rename2').hidden = false
+            document.getElementById('rename3').hidden = false
+            document.getElementById('rename_button').hidden = true
+            document.getElementById('confirm_rename_button').hidden = false
+        }
+
+        function confirmRename() {
+            tempname1 = document.getElementById('rename1_name').value
+            if (tempname1 != '')
+                name1 = tempname1
+            tempname2 = document.getElementById('rename2_name').value
+            if (tempname2 != '')
+                name2 = tempname2
+            tempname3 = document.getElementById('rename3_name').value
+            if (tempname3 != '')
+                name3 = tempname3
+            document.getElementById('rename1').hidden = true
+            document.getElementById('rename2').hidden = true
+            document.getElementById('rename3').hidden = true
+            document.getElementById('confirm_rename_button').hidden = true
+            document.getElementById('rename_button').hidden = false
+            showColumn(1)
+            displayScore()
+        }
+
+        function restart() {
+            document.getElementById('restart_window').style.visibility = 'visible'
+        }
+
+        function confirm_restart() {
+            score1 = 0
+            score2 = 0
+            score3 = 0
+            game = 0
+            record = []
+            displayScore()
+            document.getElementById('restart_window').style.visibility = 'hidden'
+        }
+
+        function cancel_restart() {
+            document.getElementById('restart_window').style.visibility = 'hidden'
+        }
+
+        function adjust() {
+            hideButtons()
+            document.getElementById('confirm_adjust_button').hidden = false
+            document.getElementById('adjust_tip').hidden = false
+            showColumn(3)
+        }
+
+        function confirmAdjust() {
+            let player1Score = parseInt(document.getElementById('player1_score').value)
+            if (!isNaN(player1Score))
+                score1 += player1Score
+            let player2Score = parseInt(document.getElementById('player2_score').value)
+            if (!isNaN(player2Score))
+                score2 += player2Score
+            let player3Score = parseInt(document.getElementById('player3_score').value)
+            if (!isNaN(player3Score))
+                score3 += player3Score
+            document.getElementById('player1_score').value = ''
+            document.getElementById('player2_score').value = ''
+            document.getElementById('player3_score').value = ''
+            displayScore()
+            document.getElementById('confirm_adjust_button').hidden = true
+            document.getElementById('adjust_tip').hidden = true
+            hideColumn(3)
+            showInitialButtons()
+        }
+
+    </script>
+</body>
+
+</html>

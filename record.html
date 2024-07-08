@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>本局每轮得分情况</title>
+    <script src="vue.js"></script>
+    <script src="echarts.min.js"></script>
+</head>
+
+<body>
+    <button id='back_to_home' onclick="back_to_home()">返回</button>
+    <div style="overflow-x:auto;margin: 0;padding: 0;">
+        <div id="main" style="width:400px;height:600px;margin:0;padding: 0;"></div>
+    </div>
+    <script src="initStorage.js"></script>
+    <script>
+        var mainDiv = document.getElementById('main');
+        mainDiv.style.width = (200 + 30 * record.length) + 'px';
+        var myChart = echarts.init(mainDiv);
+        var xAxises = Array.from({ length: record.length }, (_, i) => i + 1);
+        var player1 = Array.from({ length: record.length }, (_, i) => record[i].score1);
+        var player2 = Array.from({ length: record.length }, (_, i) => record[i].score2);
+        var player3 = Array.from({ length: record.length }, (_, i) => record[i].score3);
+
+        var option = {
+            grid: {
+                left: '2%',
+                right: '2%',
+                containLabel: true
+            },
+            tooltip: {
+                trigger: 'axis',
+                axisPointer:{
+                    type: 'shadow'
+                }
+            },
+            legend: {
+                data: [name1, name2, name3]
+            },
+            xAxis: {
+                data: xAxises
+            },
+            yAxis: {
+                type: 'value'
+            },
+            series: [
+                {
+                    name: name1,
+                    type: 'line',
+                    data: player1
+                },
+                {
+                    name: name2,
+                    type: 'line',
+                    data: player2
+                },
+                {
+                    name: name3,
+                    type: 'line',
+                    data: player3
+                }
+            ]
+        };
+        myChart.setOption(option);
+
+        function back_to_home() {
+            location.href = ".."
+        }
+
+    </script>
+</body>
+
+</html>
